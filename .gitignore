@@ -1,0 +1,6 @@
+.venv/
+index/
+notes/
+__pycache__/
+*.pyc
+.pytest_cache/
