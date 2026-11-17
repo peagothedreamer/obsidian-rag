@@ -1,7 +1,7 @@
 # obsidian-rag 实验记录与改进清单
 
 - 日期：2026-11-17
-- 项目：`F:\Desktop\obsidian-rag`
+- 项目：`obsidian-rag`（仓库根目录）
 - 目的：记录评测设计、失败案例、已做改动和待验证方向，避免结论散落在聊天里。
 
 ## 1. 评测集设计
@@ -147,7 +147,7 @@ def search(
 
 - 笔记副本：`notes/电子电路基础`，346 篇正文，排除 `lec*` 重复副本和 `_源课件`/`_素材`。
 - 只索引这一门课；`notes/` 已加入 `.gitignore`。
-- HuggingFace 直连超时，走 `hf-mirror.com`；模型缓存在 `F:\hf-cache`。
+- 模型缓存默认在项目内的 `.cache/huggingface`；国内网络通过 `.env` 设置 `HF_ENDPOINT=https://hf-mirror.com`。
 - `.env` 保存 `DEEPSEEK_API_KEY`，`rag/config.py` 内置轻量 dotenv 加载；`.env` 已 gitignore，另有 `.env.example`。
 - 当前 `.venv` 为 Python 3.14，torch 2.15 / sentence-transformers 6.3 实测可用；计划原写 3.13，未强制重建。
 - jieba 在 Python 3.14 下的 `SyntaxWarning` 是依赖自身问题，不影响功能；可在 pytest 配置中过滤。

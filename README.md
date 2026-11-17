@@ -176,18 +176,21 @@ uv run python -m hyde.rerank --questions eval/questions.paraphrase.jsonl --out r
 
 小样本上的差距只写趋势，不写精确的百分比提升。
 
-## 快速开始
+## 快速开始（可选）
+
+面试官通常只需要看评测结果和设计；需要复现时按下面步骤。
 
 ### 环境
 
-- Python 3.11+（当前在 Windows 11 + Python 3.14 验证）
+- Python 3.11+（在 Windows 11 + Python 3.14 验证）
 - [uv](https://docs.astral.sh/uv/)
 - 首次运行会下载 bge-m3 与 bge-reranker-base，约 3.3GB
 
 ### 1. 安装依赖
 
-```powershell
-cd F:\Desktop\obsidian-rag
+```bash
+git clone https://github.com/peagothedreamer/obsidian-rag.git
+cd obsidian-rag
 uv sync
 ```
 
@@ -199,7 +202,7 @@ uv sync
 notes/电子电路基础/
 ```
 
-保留章节目录结构。本机来源为 `F:\Desktop\Obsidian Vault\电子电路基础`，复制时排除：
+保留章节目录结构，并排除：
 
 - `lec1`–`lec11`：前 11 章的重复副本
 - `_源课件`、`_素材`：源文件和附件目录
@@ -208,11 +211,11 @@ notes/电子电路基础/
 
 ### 3. 配置 API key（可选）
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
-编辑 `.env`：
+PowerShell 用 `Copy-Item .env.example .env`。编辑 `.env`：
 
 ```text
 DEEPSEEK_API_KEY=sk-你的key
@@ -222,22 +225,23 @@ DEEPSEEK_API_KEY=sk-你的key
 
 ### 4. 构建索引
 
-```powershell
+```bash
 uv run python -m rag.index
 ```
 
 首次运行会下载模型，CPU 建索引约 3–5 分钟。再次运行只处理变更文件。
 
-国内网络说明：`rag/config.py` 默认使用 `hf-mirror.com`，模型缓存在 `F:\hf-cache`。如需修改：
+模型缓存默认在项目内的 `.cache/huggingface`。国内网络可以在 `.env` 中设置镜像：
 
-```powershell
-$env:HF_ENDPOINT = "https://huggingface.co"
-$env:HF_HOME = "D:\hf-cache"
+```text
+HF_ENDPOINT=https://hf-mirror.com
 ```
+
+也可以用 `HF_HOME` 指定其他缓存目录。
 
 ### 5. 跑评测
 
-```powershell
+```bash
 # 基础集 46 题
 uv run python -m rag.eval
 
@@ -250,7 +254,7 @@ uv run python -m rag.eval --questions eval/questions.paraphrase.jsonl --out repo
 
 ### 6. 启动界面
 
-```powershell
+```bash
 uv run streamlit run app.py --server.address 127.0.0.1
 ```
 
@@ -351,6 +355,7 @@ uv run pytest -q
 
 ## 参考
 
+- HyDE: [Precise Zero-Shot Dense Retrieval without Relevance Labels](https://aclanthology.org/2023.acl-long.99/)（[arXiv](https://arxiv.org/abs/2212.10496)、[代码](https://github.com/texttron/hyde)）
 - [BAAI/bge-m3](https://huggingface.co/BAAI/bge-m3)
 - [BAAI/bge-reranker-base](https://huggingface.co/BAAI/bge-reranker-base)
 - [DeepSeek API](https://platform.deepseek.com/)

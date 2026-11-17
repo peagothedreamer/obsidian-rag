@@ -7,3 +7,4 @@ __pycache__/
 .env
 eval/questions.draft.jsonl
 hyde/cache/
+.cache/

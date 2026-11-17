@@ -8,12 +8,12 @@
 
 **Tech Stack:** Python 3.13、uv、sentence-transformers、rank-bm25、jieba、numpy、openai（DeepSeek 兼容接口）、streamlit、pytest。
 
-**Spec:** `F:\Desktop\obsidian-rag\docs\superpowers\specs\2026-11-17-obsidian-rag-design.md`
+**Spec:** `docs/specs/2026-11-17-obsidian-rag-design.md`
 
 ## Global Constraints
 
-- 项目根目录：`F:\Desktop\obsidian-rag`。
-- 笔记库：`F:\Desktop\obsidian-rag\notes\`（从 vault 复制的 346 篇正文，已去掉 `lec*` 重复副本和 `_源课件`/`_素材`）；只索引 `电子电路基础`。
+- 项目根目录：仓库根目录 `obsidian-rag`。
+- 笔记库：`notes/`（从 vault 复制的 346 篇正文，已去掉 `lec*` 重复副本和 `_源课件`/`_素材`）；只索引 `电子电路基础`。
 - `notes/` 是本地数据副本，加入 `.gitignore`，不提交；需要刷新时从 vault 重新复制。
 - 模型：embedding `BAAI/bge-m3`，reranker `BAAI/bge-reranker-base`，生成 `deepseek-chat`。
 - 切块：最大 800 字符，重叠 100 字符，小于 50 字符的碎块并入上一块。
@@ -22,7 +22,7 @@
 - 所有命令从项目根目录执行，统一用 `uv run`。
 - 不改动 Obsidian vault 内任何文件（只读）。
 - 测试不加载真实模型、不调用网络。
-- 本机实测 `huggingface.co` 连接超时、`hf-mirror.com` 可用：`rag/config.py` 顶部用 `os.environ.setdefault` 设置 `HF_ENDPOINT=https://hf-mirror.com` 和 `HF_HOME=F:\hf-cache`；所有模块先 import `rag.config`，再 import `sentence_transformers`。
+- `rag/config.py` 先加载 `.env`，再设置默认 `HF_HOME=<项目>/.cache/huggingface`；如需镜像，在 `.env` 中设置 `HF_ENDPOINT`。所有模块先 import `rag.config`，再 import `sentence_transformers`。
 - 本机未设置 `DEEPSEEK_API_KEY`；无 key 时只验证仅检索模式，生成链路待配置 key 后手测。
 
 ---
@@ -141,7 +141,7 @@ from pathlib import Path
 
 # 本机实测 huggingface.co 不可达，走镜像；模型缓存放 F 盘。
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
-os.environ.setdefault("HF_HOME", r"F:\hf-cache")
+os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / ".cache" / "huggingface"))
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

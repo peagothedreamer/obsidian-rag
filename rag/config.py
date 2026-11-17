@@ -2,9 +2,8 @@
 import os
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
-os.environ.setdefault("HF_HOME", r"F:\hf-cache")
 
 def _load_dotenv(path: Path) -> None:
     """读取项目根目录的 .env；真实环境变量优先。"""
@@ -18,8 +17,10 @@ def _load_dotenv(path: Path) -> None:
         os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _load_dotenv(PROJECT_ROOT / ".env")
+
+# 模型缓存默认放在项目内，避免写系统目录；HF_ENDPOINT 由 .env 或环境变量决定。
+os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / ".cache" / "huggingface"))
 
 VAULT = Path(os.environ.get("OBSIDIAN_VAULT", PROJECT_ROOT / "notes"))
 
