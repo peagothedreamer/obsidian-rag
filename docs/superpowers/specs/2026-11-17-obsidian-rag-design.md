@@ -2,7 +2,7 @@
 
 - 日期：2026-11-17
 - 状态：待实现
-- 项目位置：`F:\projects\obsidian-rag`
+- 项目位置：`F:\Desktop\obsidian-rag`
 
 ## 1. 背景与目标
 

@@ -8,11 +8,11 @@
 
 **Tech Stack:** Python 3.13、uv、sentence-transformers、rank-bm25、jieba、numpy、openai（DeepSeek 兼容接口）、streamlit、pytest。
 
-**Spec:** `F:\projects\obsidian-rag\docs\superpowers\specs\2026-11-17-obsidian-rag-design.md`
+**Spec:** `F:\Desktop\obsidian-rag\docs\superpowers\specs\2026-11-17-obsidian-rag-design.md`
 
 ## Global Constraints
 
-- 项目根目录：`F:\projects\obsidian-rag`。
+- 项目根目录：`F:\Desktop\obsidian-rag`。
 - 笔记库：`F:\Desktop\Obsidian Vault`；只索引 `复变函数与积分变换`、`概率论与数理统计`、`大学物理Ⅱ`、`电子电路基础`、`软件技术基础` 五个目录。
 - 模型：embedding `BAAI/bge-m3`，reranker `BAAI/bge-reranker-base`，生成 `deepseek-chat`。
 - 切块：最大 800 字符，重叠 100 字符，小于 50 字符的碎块并入上一块。
@@ -47,7 +47,7 @@
 - [ ] **Step 1: 初始化仓库与项目文件**
 
 ```bash
-cd /f/projects/obsidian-rag
+cd /f/Desktop/obsidian-rag
 git init
 ```
 
