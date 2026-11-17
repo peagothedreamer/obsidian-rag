@@ -32,11 +32,14 @@ flowchart TB
     subgraph QUERY["在线：问答"]
         Q["用户问题"] --> QV["bge-m3 编码"]
         Q --> QT["jieba 分词"]
+        Q -.->|实验分支| HGEN["DeepSeek 生成<br/>假设答案"]
+        HGEN --> HE["bge-m3 编码<br/>假设答案向量"]
+        HE -.->|加入候选池| RRF["RRF 融合<br/>k=60"]
         QV --> VR["向量召回 top-20"]
         QT --> BR["BM25 召回 top-20"]
         F --> VR
         D --> BR
-        VR --> RRF["RRF 融合<br/>k=60"]
+        VR --> RRF
         BR --> RRF
         RRF --> RR["bge-reranker 精排<br/>两路并集 ≤40"]
         RR --> TOP["top-5 片段"]
@@ -47,10 +50,14 @@ flowchart TB
 
     subgraph EVAL["离线：评测"]
         EQ["基础集 46 题<br/>改写集 78 题"] --> CFG["vector / bm25<br/>hybrid / hybrid+rerank"]
+        EQ --> HYCFG["HyDE 实验<br/>query / hyde<br/>query+hyde / multi-hyde"]
         CFG --> MET["Recall@5 / MRR@10<br/>引用命中率"]
+        HYCFG --> MET
         MET --> REP["reports/eval 下的 md/json"]
     end
 ```
+
+> 虚线为 HyDE 实验分支，默认问答链路不使用；主流程是 query 向量 + BM25 → RRF → 精排。
 
 ## 核心设计
 
