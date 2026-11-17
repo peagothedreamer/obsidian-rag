@@ -9,12 +9,21 @@ from . import config
 from .search import RetrievedChunk, Searcher, print_results
 
 CITATION = re.compile(r"\[(\d+)\]")
+BLOCK_MATH = re.compile(r"\\\[(.+?)\\\]", re.S)
+INLINE_MATH = re.compile(r"\\\((.+?)\\\)", re.S)
 
 SYSTEM_PROMPT = (
     "你是笔记库问答助手。只根据给出的编号片段回答；片段不足时直接说明。"
     "引用事实时在句末标注片段编号，如 [1]。"
     "每条答案至少引用一个片段，禁止引用未给出的编号。"
+    r"数学公式使用 $...$（行内）或 $$...$$（独立成行），不要使用 \( \) 或 \[ \]。"
 )
+
+
+def normalize_math(text: str) -> str:
+    r"""把 \( \) / \[ \] 转成 Streamlit 支持的 $...$ / $$...$$。"""
+    text = BLOCK_MATH.sub(lambda m: "$$\n" + m.group(1).strip() + "\n$$", text)
+    return INLINE_MATH.sub(lambda m: "$" + m.group(1).strip() + "$", text)
 
 
 def build_context(results: list[RetrievedChunk]) -> tuple[str, list[dict]]:

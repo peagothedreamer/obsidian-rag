@@ -72,3 +72,15 @@ def test_rrf_fuse_prefers_consistent_rank():
     fused = rrf_fuse([[0, 1, 2, 3, 9], [8, 7, 6, 5, 9]], k=60)
     assert fused[0][0] == 9
     assert fused[0][1] > fused[1][1]
+
+
+from rag.ask import normalize_math
+
+
+def test_normalize_math_delimiters():
+    assert normalize_math(r"\(R_{in}\to\infty\)") == r"$R_{in}\to\infty$"
+    assert normalize_math("\\[\ni_1=i_2=0\n\\]") == "$$\ni_1=i_2=0\n$$"
+    text = "电压 \\(v_1=v_2\\)，公式：\n\\[\nv_1=v_2\n\\]"
+    out = normalize_math(text)
+    assert "$v_1=v_2$" in out
+    assert "$$\nv_1=v_2\n$$" in out
