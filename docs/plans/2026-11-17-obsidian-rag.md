@@ -1122,7 +1122,7 @@ def draft_questions(index_dir: Path, n: int, out_path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="检索质量评测")
     parser.add_argument("--questions", type=Path, default=config.PROJECT_ROOT / "eval/questions.jsonl")
-    parser.add_argument("--out", type=Path, default=config.PROJECT_ROOT / "reports/eval.md")
+    parser.add_argument("--out", type=Path, default=config.PROJECT_ROOT / "reports/eval/base.md")
     parser.add_argument("--generation", action="store_true", help="额外统计引用命中率")
     parser.add_argument("--draft", type=int, default=0, help="生成 N 条草稿题后退出")
     args = parser.parse_args()
@@ -1168,16 +1168,16 @@ Expected: 生成 `eval/questions.draft.jsonl`，20 行。
 - 每条核对 `gold_note` 路径确实存在于索引中。
 - `id` 用 `q01`、`q02` 顺序编号。
 
-- [ ] **Step 7: 跑评测**
+- [X] **Step 7: 跑评测**
 
 Run: `uv run python -m rag.eval`
-Expected: `reports/eval.md` 生成，4 行配置；`reports/eval.json` 含逐题明细。
+Expected: `reports/eval/base.md` 生成，4 行配置；`reports/eval/base.json` 含逐题明细。
 
-- [ ] **Step 8: 提交**
+- [X] **Step 8: 提交**
 
 ```bash
 git add rag/eval.py eval/questions.jsonl tests/test_pipeline.py
-git add -f reports/eval.md reports/eval.json
+git add -f reports/eval/base.md reports/eval/base.json
 git commit -m "feat: retrieval evaluation with ablation report"
 ```
 
@@ -1194,7 +1194,7 @@ git commit -m "feat: retrieval evaluation with ablation report"
 - Consumes: `rag.config`、`rag.search.Searcher`、`rag.ask.ask`。
 - Produces: `streamlit run app.py` 可用的单页问答界面。
 
-- [ ] **Step 1: 实现界面**
+- [X] **Step 1: 实现界面**
 
 创建 `app.py`：
 
@@ -1270,7 +1270,7 @@ if query := st.chat_input("问点什么……"):
     )
 ```
 
-- [ ] **Step 2: 手动验证**
+- [X] **Step 2: 手动验证**
 
 Run: `uv run streamlit run app.py`
 Expected:
@@ -1279,7 +1279,7 @@ Expected:
 - 输入「理想运放为什么有虚短虚断」，得到答案和来源；无 key 时显示片段列表。
 - 展开任一来源能看到片段全文和分数。
 
-- [ ] **Step 3: 提交**
+- [X] **Step 3: 提交**
 
 ```bash
 git add app.py
@@ -1302,7 +1302,7 @@ git commit -m "feat: streamlit chat UI with sources"
 
 - [ ] **Step 1: 写 README**
 
-创建 `README.md`，包含以下小节（指标表直接复制 `reports/eval.md` 的表格）：
+创建 `README.md`，包含以下小节（指标表直接复制 `reports/eval/base.md` 的表格）：
 
 ```markdown
 # Obsidian Notes RAG
@@ -1334,7 +1334,7 @@ flowchart LR
 
 ## 评测结果
 
-（粘贴 reports/eval.md 的表格，注明评测日期与题目数）
+（粘贴 reports/eval/base.md 的表格，注明评测日期与题目数）
 
 ## 快速开始
 
@@ -1394,4 +1394,4 @@ git commit -m "docs: README with architecture, metrics, and reproduction steps"
 - [ ] `python -m rag.eval` 报告 4 行且数值可解释（hybrid+rerank 的 Recall@5 不低于单路最优）。
 - [ ] `python -m rag.ask` 有 key 时答案带 `[n]` 引用，无 key 时降级。
 - [ ] `streamlit run app.py` 可完成一次问答。
-- [ ] README 中的指标表与 `reports/eval.md` 一致。
+- [ ] README 中的指标表与 `reports/eval/base.md` 一致。

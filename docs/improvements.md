@@ -10,7 +10,7 @@
 
 `eval/questions.jsonl`，46 条题，覆盖电子电路基础多个章节。
 
-结果（`reports/eval.md`）：
+结果（旧报告 `reports/eval/archive/base_prefix.md`；候选池修复后重跑 `reports/eval/base.md`，四项指标完全相同）：
 
 | 配置          | Recall@5 | MRR@10 |
 | ------------- | -------- | ------ |
@@ -30,7 +30,7 @@
 > p03：MOS 管的源极没有和芯片衬底接到同一个电位时，开启它所需的栅压为什么会变高？漏极电流会怎样？
 > gold：`18-MOSFET物理基础及电路模型/1.13-体效应与大信号模型.md`
 
-结果（`reports/eval_paraphrase.md`，修复候选池前）：
+结果（`reports/eval/archive/paraphrase_12q_v1.md`，修复候选池前）：
 
 | 配置                        | Recall@5 | MRR@10 |
 | --------------------------- | -------- | ------ |
@@ -40,7 +40,7 @@
 | hybrid+rerank               | 0.917    | 0.694  |
 | 引用命中率（hybrid+rerank） | 0.833    | -      |
 
-修复候选池后（`reports/eval_paraphrase_v2.md`）：
+修复候选池后（`reports/eval/archive/paraphrase_12q_v2.md`）：
 
 | 配置                        | Recall@5 | MRR@10 |
 | --------------------------- | -------- | ------ |
@@ -117,7 +117,7 @@ def search(
 
 ### 2.5 修复后结果
 
-`reports/eval_paraphrase_v2.md`：
+`reports/eval/archive/paraphrase_12q_v2.md`：
 
 | 配置                        | Recall@5 | MRR@10 |
 | --------------------------- | -------- | ------ |
@@ -131,8 +131,8 @@ def search(
 
 剩余待办：
 
-- [ ] 重跑基础集 46 题，记录新数字
-- [ ] 更新 README 的指标表与耗时说明
+- [x] 重跑基础集 46 题：指标与修复前完全相同（vector 0.978/0.905，bm25 0.957/0.846，hybrid 0.978/0.918，hybrid+rerank 1.000/0.889），说明修复只影响被截断的个例；精排耗时从 306.5 s 增加到 456.1 s。
+- [x] README 已更新指标表与耗时说明。
 
 ## 3. 待验证的检索改进
 
@@ -168,3 +168,52 @@ def search(
 
 - 2026-11-17：创建本文档，记录改写集、RRF 候选池问题与修复。
 - 2026-11-17：修复候选池后重跑改写集，Recall@5 0.917 → 1.000，MRR 0.694 → 0.763，引用命中率 0.833 → 1.000。
+- 2026-11-17：重跑基础集 46 题，指标与修复前一致；完成 README，含 mermaid 全工作流与两套评测结果。
+
+## 7. HyDE 复现结果（2026-11-17）
+
+改写集扩充到 78 题后，重跑原 RAG 与 HyDE 实验。
+
+原 RAG（78 题）：
+
+| 配置 | Recall@5 | MRR@10 |
+|---|---|---|
+| vector | 0.705 | 0.569 |
+| bm25 | 0.667 | 0.518 |
+| hybrid | 0.679 | 0.580 |
+| hybrid+rerank | 0.872 | 0.683 |
+
+HyDE（78 题，纯稠密检索）：
+
+| 模式 | Recall@5 | MRR@10 | ΔMRR | 胜/负/平 |
+|---|---|---|---|---|
+| query | 0.705 | 0.569 | - | - |
+| hyde | 0.846 | 0.646 | +0.077 | 22/11/45 |
+| query+hyde | 0.795 | 0.649 | +0.080 | 17/8/53 |
+| multi-hyde | 0.808 | 0.661 | +0.092 | 24/11/43 |
+
+结论：
+
+- HyDE 把纯稠密 Recall@5 从 70.5% 提到 84.6%，改写题上收益明确。
+- 基础集 46 题上 HyDE 略降（MRR 0.905 → 0.866），关键词重合时不需要假设文档。
+- HyDE 稠密召回接近 hybrid+rerank 的 0.872，但 MRR 仍低；两者互补。
+- 下一步：把 HyDE 向量接入混合检索候选池，再跑精排，验证能否超过 0.872。
+
+成本：234 次 API 调用，输入 17,136 tokens，输出 42,614 tokens。
+
+报告：`reports/hyde/dense_base.md`、`reports/hyde/dense_paraphrase.md`。
+
+### 7.1 HyDE 加入混合检索候选池（78 题）
+
+| 模式 | Recall@5 | MRR@10 |
+|---|---|---|
+| hybrid+rerank | 0.872 | 0.683 |
+| hyde-aug-hybrid+rerank | 0.872 | 0.692 |
+| hyde-aug-hybrid（不精排） | 0.769 | 0.636 |
+
+- 加精排后基本中性：1 胜 1 负 76 平，ΔMRR +0.009，CI 跨 0。
+- 不精排时提升明显，说明 HyDE 的价值在第一阶段召回，而当前精排已经补上了缺口。
+- 额外成本：每题一次 LLM 生成 + 更大的精排候选池；当前配置下不划算。
+- 下一步：限制精排候选预算（top-20）再测，HyDE 可能重新有价值。
+
+报告：`reports/hyde/rerank_paraphrase.md`。

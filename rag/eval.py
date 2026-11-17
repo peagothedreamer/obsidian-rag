@@ -140,7 +140,9 @@ def draft_questions(index_dir: Path, n: int, out_path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="检索质量评测")
     parser.add_argument("--questions", type=Path, default=config.PROJECT_ROOT / "eval/questions.jsonl")
-    parser.add_argument("--out", type=Path, default=config.PROJECT_ROOT / "reports/eval.md")
+    parser.add_argument(
+        "--out", type=Path, default=config.PROJECT_ROOT / "reports/eval/base.md"
+    )
     parser.add_argument("--generation", action="store_true", help="额外统计引用命中率")
     parser.add_argument("--draft", type=int, default=0, help="生成 N 条草稿题后退出")
     args = parser.parse_args()
