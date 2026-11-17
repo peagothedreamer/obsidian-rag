@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在五门课（804 篇 Markdown）上构建一个带引用问答、可量化消融评测的本地 RAG demo。
+**Goal:** 在「电子电路基础」课程（346 篇 Markdown）上构建一个带引用问答、可量化消融评测的本地 RAG demo。
 
 **Architecture:** 手写最小管线。按 Obsidian 标题切块，bge-m3 做稠密向量、jieba + BM25 做稀疏召回，RRF 融合后 bge-reranker 精排，DeepSeek 生成带 `[n]` 引用的答案。检索质量用自建评测集比较 4 种配置。
 
@@ -13,7 +13,8 @@
 ## Global Constraints
 
 - 项目根目录：`F:\Desktop\obsidian-rag`。
-- 笔记库：`F:\Desktop\Obsidian Vault`；只索引 `复变函数与积分变换`、`概率论与数理统计`、`大学物理Ⅱ`、`电子电路基础`、`软件技术基础` 五个目录。
+- 笔记库：`F:\Desktop\obsidian-rag\notes\`（从 vault 复制的 346 篇正文，已去掉 `lec*` 重复副本和 `_源课件`/`_素材`）；只索引 `电子电路基础`。
+- `notes/` 是本地数据副本，加入 `.gitignore`，不提交；需要刷新时从 vault 重新复制。
 - 模型：embedding `BAAI/bge-m3`，reranker `BAAI/bge-reranker-base`，生成 `deepseek-chat`。
 - 切块：最大 800 字符，重叠 100 字符，小于 50 字符的碎块并入上一块。
 - 检索：向量与 BM25 各取 top-20，RRF `k=60`，精排后返回 top-5；评测时取 top-10。
@@ -81,6 +82,7 @@ testpaths = ["tests"]
 ```
 .venv/
 index/
+notes/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -141,16 +143,15 @@ os.environ.setdefault("HF_HOME", r"F:\hf-cache")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-VAULT = Path(os.environ.get("OBSIDIAN_VAULT", r"F:\Desktop\Obsidian Vault"))
+VAULT = Path(os.environ.get("OBSIDIAN_VAULT", PROJECT_ROOT / "notes"))
 
 COURSE_DIRS = [
     d.strip()
-    for d in os.environ.get(
-        "COURSE_DIRS",
-        "复变函数与积分变换,概率论与数理统计,大学物理Ⅱ,电子电路基础,软件技术基础",
-    ).split(",")
+    for d in os.environ.get("COURSE_DIRS", "电子电路基础").split(",")
     if d.strip()
 ]
+
+EXCLUDE_DIR_PREFIXES = ("lec", "_")
 
 INDEX_DIR = Path(os.environ.get("INDEX_DIR", PROJECT_ROOT / "index"))
 
@@ -430,7 +431,11 @@ def iter_note_files(vault_dir: Path, course_dirs: list[str]) -> list[Path]:
         root = vault_dir / course
         if not root.is_dir():
             raise FileNotFoundError(f"课程目录不存在: {root}")
-        files.extend(sorted(root.rglob("*.md")))
+        for path in sorted(root.rglob("*.md")):
+            dirs = path.relative_to(root).parts[:-1]
+            if any(d.startswith(config.EXCLUDE_DIR_PREFIXES) for d in dirs):
+                continue
+            files.append(path)
     return files
 
 
@@ -562,7 +567,7 @@ Expected: 3 passed。
 - [ ] **Step 5: 用真实笔记库建索引**
 
 Run: `uv run python -m rag.index`
-Expected: 输出类似 `{"notes": 804, "chunks": 2500 左右, "reused_chunks": 0, "embedded_chunks": 2500 左右}`；首次会下载 bge-m3，耗时 5–10 分钟。
+Expected: 输出类似 `{"notes": 346, "chunks": 1200 左右, "reused_chunks": 0, "embedded_chunks": 1200 左右}`；首次会下载 bge-m3，耗时 3–5 分钟。
 
 - [ ] **Step 6: 验证增量**
 
@@ -767,8 +772,8 @@ Expected: 4 passed。
 
 - [ ] **Step 5: 真实数据冒烟测试**
 
-Run: `uv run python -m rag.search "柯西积分公式成立的条件" --top-k 5`
-Expected: top-5 中出现 `复变函数与积分变换/.../柯西积分公式.md` 相关条目，rerank 分数高于 0。
+Run: `uv run python -m rag.search "理想运放为什么有虚短虚断" --top-k 5`
+Expected: top-5 中出现 `电子电路基础/04-电子电路 · 运算放大器/1.3-理想运放与虚短虚断.md` 相关条目，rerank 分数高于 0。
 
 - [ ] **Step 6: 提交**
 
@@ -903,12 +908,12 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: 验证无 key 降级**
 
-Run: `env -u DEEPSEEK_API_KEY uv run python -m rag.ask "柯西积分公式成立的条件"`（Windows bash 下）
+Run: `env -u DEEPSEEK_API_KEY uv run python -m rag.ask "理想运放为什么有虚短虚断"`（Windows bash 下）
 Expected: 输出「仅检索模式（未配置 DEEPSEEK_API_KEY）」和 5 条片段，退出码 0。
 
 - [ ] **Step 3: 验证生成与引用**
 
-Run: `DEEPSEEK_API_KEY=你的key uv run python -m rag.ask "柯西积分公式成立的条件"`
+Run: `DEEPSEEK_API_KEY=你的key uv run python -m rag.ask "理想运放为什么有虚短虚断"`
 Expected: 中文答案包含 `[n]` 引用；「来源：」下列出对应笔记路径。
 
 - [ ] **Step 4: 提交**
@@ -1146,8 +1151,8 @@ Expected: 生成 `eval/questions.draft.jsonl`，20 行。
 
 把 `eval/questions.draft.jsonl` 中可用的条目改写后写入 `eval/questions.jsonl`，要求：
 
-- 总数 30–50 条，五门课每门至少 4 条。
-- 问题必须是自然提问（「柯西积分公式成立的条件是什么？」），不要用「X 讲了什么？」模板。
+- 总数 30–50 条，全部来自电子电路基础，覆盖至少 4 个章节（电路定律、运放、二极管、三极管/MOSFET、频率响应/反馈）。
+- 问题必须是自然提问（「理想运放为什么有虚短虚断？」），不要用「X 讲了什么？」模板。
 - 每条核对 `gold_note` 路径确实存在于索引中。
 - `id` 用 `q01`、`q02` 顺序编号。
 
@@ -1257,7 +1262,7 @@ Run: `uv run streamlit run app.py`
 Expected:
 
 - 侧边栏显示笔记数、chunk 数、模型名。
-- 输入「柯西积分公式成立的条件」，得到答案和来源；无 key 时显示片段列表。
+- 输入「理想运放为什么有虚短虚断」，得到答案和来源；无 key 时显示片段列表。
 - 展开任一来源能看到片段全文和分数。
 
 - [ ] **Step 3: 提交**
@@ -1286,7 +1291,7 @@ git commit -m "feat: streamlit chat UI with sources"
 ```markdown
 # Obsidian Notes RAG
 
-本地 Obsidian 课程笔记（5 门课，804 篇 Markdown）上的检索增强问答 demo。
+本地 Obsidian 课程笔记（电子电路基础，346 篇 Markdown）上的检索增强问答 demo。
 
 ## 特点
 
@@ -1299,7 +1304,7 @@ git commit -m "feat: streamlit chat UI with sources"
 
 ```mermaid
 flowchart LR
-    A[Obsidian 五门课<br/>804 篇 md] --> B[按标题切块<br/>800 字 / 100 字重叠]
+    A[电子电路基础<br/>346 篇 md] --> B[按标题切块<br/>800 字 / 100 字重叠]
     B --> C[bge-m3 向量<br/>embeddings.npy]
     B --> D[jieba + BM25]
     Q[问题] --> C
@@ -1317,6 +1322,8 @@ flowchart LR
 
 ## 快速开始
 
+`notes/电子电路基础/` 已放好 346 篇笔记副本（不入 git）；换数据时覆盖该目录后重新建索引。
+
 ```bash
 uv sync
 export DEEPSEEK_API_KEY=你的key   # 可选
@@ -1332,7 +1339,7 @@ uv run streamlit run app.py
 ## 已知局限
 
 - 评测题由作者编写，存在选题偏差。
-- 只覆盖个人课程笔记，领域窄。
+- 只覆盖电子电路基础一门课，领域窄。
 - 附件（图片、PDF）未解析；公式只作为文本参与检索。
 - 首次建索引需下载约 3.3GB 模型。
 ```
@@ -1350,7 +1357,7 @@ uv run pytest -v
 
 Expected:
 
-- `rag.index` 输出 `notes: 804`（课程目录没有变化时）。
+- `rag.index` 输出 `notes: 346`（课程目录没有变化时）。
 - `rag.eval` 生成报告，4 行配置。
 - pytest 全部通过。
 
@@ -1366,7 +1373,7 @@ git commit -m "docs: README with architecture, metrics, and reproduction steps"
 ## 自检清单（执行完逐项确认）
 
 - [ ] `uv run pytest` 全部通过。
-- [ ] `python -m rag.search "柯西积分公式"` top-5 命中对应笔记。
+- [ ] `python -m rag.search "理想运放虚短虚断"` top-5 命中对应笔记。
 - [ ] `python -m rag.eval` 报告 4 行且数值可解释（hybrid+rerank 的 Recall@5 不低于单路最优）。
 - [ ] `python -m rag.ask` 有 key 时答案带 `[n]` 引用，无 key 时降级。
 - [ ] `streamlit run app.py` 可完成一次问答。
