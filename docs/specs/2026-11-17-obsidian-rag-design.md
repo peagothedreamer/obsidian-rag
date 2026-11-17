@@ -39,10 +39,10 @@
 | Embedding | `BAAI/bge-m3` | 中英混排和公式文本表现稳，1024 维 |
 | 稀疏检索 | `rank_bm25` + `jieba` | 中文分词后 BM25，补足专有名词和公式关键词 |
 | 融合 | RRF（k=60） | 无需调权重，对两路召回分数尺度不敏感 |
-| 精排 | `BAAI/bge-reranker-base` | 278M，CPU 上对 20 个候选精排约 1 秒内 |
+| 精排 | `BAAI/bge-reranker-base` | 278M，CPU 上对 20–40 个候选精排约 4–11 秒 |
 | 生成 | DeepSeek `deepseek-chat` | OpenAI 兼容接口，价格低，中文好 |
 | 界面 | Streamlit 单页 | 100 行内完成聊天和来源展示 |
-| 存储 | jsonl + numpy | 约 3000 个 chunk，全量点积毫秒级，不需要数据库 |
+| 存储 | jsonl + numpy | 约 1200 个 chunk，全量点积毫秒级，不需要数据库 |
 
 依赖带来的成本：首次运行下载 bge-m3（约 2.2GB）和 reranker（约 1.1GB）；346 篇笔记全量建索引预计 3–5 分钟（CPU），之后按文件变更增量更新。
 
@@ -59,7 +59,7 @@ chunks.jsonl ──► bge-m3 ──► embeddings.npy
 query
    ├─ bge-m3 → 余弦 top-20
    └─ jieba  → BM25 top-20
-        └─ RRF(k=60) → 候选 top-20
+        └─ RRF(k=60) → 两路并集（≤40）
              └─ bge-reranker-base → top-5
                   ├─ DeepSeek 生成答案（带 [n] 引用）
                   └─ Streamlit 展示来源片段
@@ -119,12 +119,12 @@ query
 
 ### 5.4 检索（`rag/search.py`）
 
-接口：`search(query: str, top_k: int = 5, no_rerank: bool = False) -> list[RetrievedChunk]`
+接口：`search(query: str, top_k: int = 5, no_rerank: bool = False, recall_k: int | None = None, rerank_n: int | None = None) -> list[RetrievedChunk]`
 
 1. 向量召回：query 用同一 bge-m3 编码，与 embeddings.npy 点积，取 top-20。
 2. BM25 召回：jieba 精确模式分词，过滤空白和纯标点 token，取 top-20。
-3. RRF 融合：`score = Σ 1/(60 + rank)`，融合后取 top-20。只出现在一路的 chunk 仅累加该路得分。
-4. 精排：reranker 对 20 个候选打分，取 top_k。
+3. RRF 融合：`score = Σ 1/(60 + rank)`，对两路召回的全部候选排序（最多 `2 × recall_k`）。只出现在一路的 chunk 仅累加该路得分。
+4. 精排：reranker 对两路召回并集（最多 `2 × recall_k`，默认 40 个）打分，取 top_k。RRF 只用于排序，不用于截断候选池，否则单路命中的正确结果会在精排前被丢弃。
 5. 返回 chunk 文本、note_path、heading_path、各阶段分数。
 
 `search.py` 同时提供 CLI（`python -m rag.search "问题"`），打印 top-5 片段和分数。评测时以 `top_k=10` 调用，供 MRR@10 使用。
@@ -160,6 +160,7 @@ query
 
 - `gold_heading` 可选，v1 指标只按 note 层面计算。
 - 规模：30–50 题，全部来自电子电路基础，覆盖至少 4 个章节（建议：电路定律、运放、二极管、三极管/MOSFET、频率响应/反馈）。
+- 另建 10–15 条**不包含笔记标题原词**的改写题，写入 `eval/questions.paraphrase.jsonl`，单独评测，用于验证语义召回；基础集关键词重合度高，改写集才能拉开各检索配置的差距。
 - 草稿生成：`python -m rag.eval --draft 20` 从 vault 随机抽样标题，按「<笔记名> 中的 <标题> 讲了什么？」模板写入 `eval/questions.draft.jsonl`。人工筛选、改写后合入正式文件，草稿本身不参与评测。
 - vector 和 bm25 单路配置直接调用对应召回函数，不经过融合。
 
@@ -170,13 +171,15 @@ query
 | vector | 余弦 top-10 |
 | bm25 | BM25 top-10 |
 | hybrid | RRF top-10，不精排 |
-| hybrid+rerank | RRF top-20 → 精排 top-10 |
+| hybrid+rerank | 两路召回并集（≤40）→ 精排 top-10 |
 
 指标（按笔记去重计算）：
 
 - **Recall@5**：每组配置返回结果的前 5 条涉及的笔记集合包含 `gold_note` 的题目占比。
 - **MRR@10**：取 top-10 中去重后第一次出现 `gold_note` 的排名 r，得分 1/r；未命中记 0；对所有题取平均。
 - **引用命中率**（需要 API）：在答案至少含一个有效 `[n]` 引用的题目中，被引用片段至少一个来自 `gold_note` 的比例。仅对 hybrid+rerank 配置统计。
+
+小样本提醒：12 题时 1 题约等于 8.3 个百分点，46 题时约 2.2 个百分点。报告和简历必须注明题目数、题目构造方式，不要把小差距写成精确的百分比提升。
 
 输出：
 

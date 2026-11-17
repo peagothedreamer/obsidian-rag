@@ -30,6 +30,7 @@
 ### Task 1: 项目骨架、配置与切块
 
 **Files:**
+
 - Create: `pyproject.toml`
 - Create: `.gitignore`
 - Create: `rag/__init__.py`
@@ -38,6 +39,7 @@
 - Test: `tests/test_pipeline.py`
 
 **Interfaces:**
+
 - Consumes: 无。
 - Produces:
   - `rag.config` 常量：`VAULT: Path`、`COURSE_DIRS: list[str]`、`INDEX_DIR: Path`、`EMBEDDING_MODEL`、`RERANK_MODEL`、`DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL`、`CHUNK_MAX_CHARS=800`、`CHUNK_OVERLAP_CHARS=100`、`CHUNK_MIN_CHARS=50`、`RECALL_K=20`、`RRF_K=60`、`TOP_K=5`。
@@ -45,7 +47,7 @@
   - `rag.chunker.chunk_note(note_path: str, note_title: str, text: str, max_chars=None, overlap=None, min_chars=None) -> list[Chunk]`。
   - `rag.chunker.pack_paragraphs(body: str, max_chars: int, overlap: int) -> list[str]`。
 
-- [ ] **Step 1: 初始化仓库与项目文件**
+- [X] **Step 1: 初始化仓库与项目文件**
 
 ```bash
 cd /f/Desktop/obsidian-rag
@@ -90,7 +92,7 @@ __pycache__/
 
 创建 `rag/__init__.py`（空文件）。
 
-- [ ] **Step 2: 写失败测试**
+- [X] **Step 2: 写失败测试**
 
 创建 `tests/test_pipeline.py`：
 
@@ -123,12 +125,12 @@ def test_pack_paragraphs_overlaps_and_caps_length():
     assert parts[0][-100:] == parts[1][:100]
 ```
 
-- [ ] **Step 3: 运行测试确认失败**
+- [X] **Step 3: 运行测试确认失败**
 
 Run: `uv run pytest tests/test_pipeline.py -v`
 Expected: 首次运行会安装依赖（torch 等约 2–3GB，需要等待几分钟），然后 FAIL，`ModuleNotFoundError: No module named 'rag.config'` 或 `rag.chunker`。
 
-- [ ] **Step 4: 实现配置**
+- [X] **Step 4: 实现配置**
 
 创建 `rag/config.py`：
 
@@ -171,7 +173,7 @@ RRF_K = 60
 TOP_K = 5
 ```
 
-- [ ] **Step 5: 实现切块**
+- [X] **Step 5: 实现切块**
 
 创建 `rag/chunker.py`：
 
@@ -308,12 +310,12 @@ def chunk_note(
     return chunks
 ```
 
-- [ ] **Step 6: 运行测试确认通过**
+- [X] **Step 6: 运行测试确认通过**
 
 Run: `uv run pytest tests/test_pipeline.py -v`
 Expected: 2 passed。
 
-- [ ] **Step 7: 提交**
+- [X] **Step 7: 提交**
 
 ```bash
 git add pyproject.toml .gitignore rag/ tests/
@@ -325,10 +327,12 @@ git commit -m "feat: project skeleton and heading-based chunker"
 ### Task 2: 索引与增量更新
 
 **Files:**
+
 - Create: `rag/index.py`
 - Modify: `tests/test_pipeline.py`（追加测试）
 
 **Interfaces:**
+
 - Consumes: `rag.config`、`rag.chunker.Chunk`、`rag.chunker.chunk_note`。
 - Produces:
   - `build_index(index_dir: Path | None = None, vault_dir: Path | None = None, course_dirs: list[str] | None = None, rebuild: bool = False, embed_fn=None) -> dict`，返回 `{"notes": int, "chunks": int, "reused_chunks": int, "embedded_chunks": int}`。
@@ -336,7 +340,7 @@ git commit -m "feat: project skeleton and heading-based chunker"
   - `iter_note_files(vault_dir: Path, course_dirs: list[str]) -> list[Path]`。
   - CLI：`python -m rag.index [--rebuild]`。
 
-- [ ] **Step 1: 写失败测试**
+- [X] **Step 1: 写失败测试**
 
 在 `tests/test_pipeline.py` 末尾追加：
 
@@ -381,12 +385,12 @@ def test_incremental_index_reuses_unchanged(tmp_path):
     assert calls[-1] == 1
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [X] **Step 2: 运行测试确认失败**
 
 Run: `uv run pytest tests/test_pipeline.py::test_incremental_index_reuses_unchanged -v`
 Expected: FAIL，`ModuleNotFoundError: No module named 'rag.index'`。
 
-- [ ] **Step 3: 实现索引**
+- [X] **Step 3: 实现索引**
 
 创建 `rag/index.py`：
 
@@ -559,22 +563,22 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: 运行全部测试**
+- [X] **Step 4: 运行全部测试**
 
 Run: `uv run pytest tests/test_pipeline.py -v`
 Expected: 3 passed。
 
-- [ ] **Step 5: 用真实笔记库建索引**
+- [X] **Step 5: 用真实笔记库建索引**
 
 Run: `uv run python -m rag.index`
 Expected: 输出类似 `{"notes": 346, "chunks": 1200 左右, "reused_chunks": 0, "embedded_chunks": 1200 左右}`；首次会下载 bge-m3，耗时 3–5 分钟。
 
-- [ ] **Step 6: 验证增量**
+- [X] **Step 6: 验证增量**
 
 Run: `uv run python -m rag.index`
 Expected: `"embedded_chunks": 0`，`"reused_chunks"` 等于 chunk 总数。
 
-- [ ] **Step 7: 提交**
+- [X] **Step 7: 提交**
 
 ```bash
 git add rag/index.py tests/test_pipeline.py
@@ -586,19 +590,21 @@ git commit -m "feat: chunk and embedding index with incremental updates"
 ### Task 3: 混合检索与 RRF 融合
 
 **Files:**
+
 - Create: `rag/search.py`
 - Modify: `tests/test_pipeline.py`（追加测试）
 
 **Interfaces:**
+
 - Consumes: `rag.config`、`rag.chunker.Chunk`、`rag.index.load_chunks`。
 - Produces:
   - `rrf_fuse(rankings: list[list[int]], k: int = 60) -> list[tuple[int, float]]`，按融合分数降序。
   - `tokenize(text: str) -> list[str]`。
   - `RetrievedChunk` dataclass：`chunk, vector_rank, bm25_rank, rrf_score, rerank_score`。
-  - `Searcher(index_dir=None, embedding_model=None)`，属性 `chunks`、`embeddings`；方法 `vector_candidates(query, k=20)`、`bm25_candidates(query, k=20)`、`search(query, top_k=5, no_rerank=False, recall_k=None, rerank_n=20) -> list[RetrievedChunk]`。
+  - `Searcher(index_dir=None, embedding_model=None)`，属性 `chunks`、`embeddings`；方法 `vector_candidates(query, k=20)`、`bm25_candidates(query, k=20)`、`search(query, top_k=5, no_rerank=False, recall_k=None, rerank_n=None) -> list[RetrievedChunk]`；`rerank_n=None` 时取 `2 × recall_k`。
   - CLI：`python -m rag.search "问题"`。
 
-- [ ] **Step 1: 写失败测试**
+- [X] **Step 1: 写失败测试**
 
 在 `tests/test_pipeline.py` 末尾追加：
 
@@ -613,12 +619,12 @@ def test_rrf_fuse_prefers_consistent_rank():
     assert fused[0][1] > fused[1][1]
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [X] **Step 2: 运行测试确认失败**
 
 Run: `uv run pytest tests/test_pipeline.py::test_rrf_fuse_prefers_consistent_rank -v`
 Expected: FAIL，`ModuleNotFoundError: No module named 'rag.search'`。
 
-- [ ] **Step 3: 实现检索**
+- [X] **Step 3: 实现检索**
 
 创建 `rag/search.py`：
 
@@ -707,9 +713,10 @@ class Searcher:
         top_k: int = config.TOP_K,
         no_rerank: bool = False,
         recall_k: int | None = None,
-        rerank_n: int = 20,
+        rerank_n: int | None = None,
     ) -> list[RetrievedChunk]:
         recall_k = recall_k or config.RECALL_K
+        rerank_n = rerank_n or recall_k * 2
         vector_hits = self.vector_candidates(query, recall_k)
         bm25_hits = self.bm25_candidates(query, recall_k)
         fused = rrf_fuse(
@@ -765,17 +772,17 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: 运行全部测试**
+- [X] **Step 4: 运行全部测试**
 
 Run: `uv run pytest tests/test_pipeline.py -v`
 Expected: 4 passed。
 
-- [ ] **Step 5: 真实数据冒烟测试**
+- [X] **Step 5: 真实数据冒烟测试**
 
 Run: `uv run python -m rag.search "理想运放为什么有虚短虚断" --top-k 5`
 Expected: top-5 中出现 `电子电路基础/04-电子电路 · 运算放大器/1.3-理想运放与虚短虚断.md` 相关条目，rerank 分数高于 0。
 
-- [ ] **Step 6: 提交**
+- [X] **Step 6: 提交**
 
 ```bash
 git add rag/search.py tests/test_pipeline.py
@@ -787,16 +794,18 @@ git commit -m "feat: hybrid vector+BM25 retrieval with RRF and reranker"
 ### Task 4: DeepSeek 生成与引用
 
 **Files:**
+
 - Create: `rag/ask.py`
 
 **Interfaces:**
+
 - Consumes: `rag.config`、`rag.search.Searcher`、`rag.search.RetrievedChunk`。
 - Produces:
   - `build_context(results: list[RetrievedChunk]) -> tuple[str, list[dict]]`，来源 dict 字段：`n, note_path, heading_path, score`。
   - `ask(query: str, searcher: Searcher | None = None, top_k: int = 5) -> dict`，返回 `{"mode": "generation" | "retrieval", "answer": str | None, "sources": list[dict], "results": list[RetrievedChunk]}`。
   - CLI：`python -m rag.ask "问题"`。
 
-- [ ] **Step 1: 实现生成模块**
+- [X] **Step 1: 实现生成模块**
 
 创建 `rag/ask.py`：
 
@@ -906,12 +915,12 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: 验证无 key 降级**
+- [X] **Step 2: 验证无 key 降级**
 
 Run: `env -u DEEPSEEK_API_KEY uv run python -m rag.ask "理想运放为什么有虚短虚断"`（Windows bash 下）
 Expected: 输出「仅检索模式（未配置 DEEPSEEK_API_KEY）」和 5 条片段，退出码 0。
 
-- [ ] **Step 3: 验证生成与引用**
+- [X] **Step 3: 验证生成与引用**
 
 Run: `DEEPSEEK_API_KEY=你的key uv run python -m rag.ask "理想运放为什么有虚短虚断"`
 Expected: 中文答案包含 `[n]` 引用；「来源：」下列出对应笔记路径。
@@ -928,11 +937,13 @@ git commit -m "feat: DeepSeek answer generation with citations"
 ### Task 5: 评测、消融与草稿题
 
 **Files:**
+
 - Create: `rag/eval.py`
 - Create: `eval/questions.jsonl`
 - Modify: `tests/test_pipeline.py`（追加测试）
 
 **Interfaces:**
+
 - Consumes: `rag.config`、`rag.index.load_chunks`、`rag.search.Searcher`、`rag.ask.ask`。
 - Produces:
   - `load_questions(path, note_paths=None) -> list[dict]`。
@@ -943,7 +954,7 @@ git commit -m "feat: DeepSeek answer generation with citations"
   - `draft_questions(index_dir: Path, n: int, out_path: Path) -> None`。
   - CLI：`python -m rag.eval [--generation] [--draft N]`。
 
-- [ ] **Step 1: 写失败测试**
+- [X] **Step 1: 写失败测试**
 
 在 `tests/test_pipeline.py` 末尾追加：
 
@@ -959,12 +970,12 @@ def test_recall_and_mrr():
     assert mrr_at_k(["b.md", "c.md"], "a.md", k=10) == 0.0
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [X] **Step 2: 运行测试确认失败**
 
 Run: `uv run pytest tests/test_pipeline.py::test_recall_and_mrr -v`
 Expected: FAIL，`ModuleNotFoundError: No module named 'rag.eval'`。
 
-- [ ] **Step 3: 实现评测**
+- [X] **Step 3: 实现评测**
 
 创建 `rag/eval.py`：
 
@@ -1137,7 +1148,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: 运行全部测试**
+- [X] **Step 4: 运行全部测试**
 
 Run: `uv run pytest tests/test_pipeline.py -v`
 Expected: 5 passed。
@@ -1152,6 +1163,7 @@ Expected: 生成 `eval/questions.draft.jsonl`，20 行。
 把 `eval/questions.draft.jsonl` 中可用的条目改写后写入 `eval/questions.jsonl`，要求：
 
 - 总数 30–50 条，全部来自电子电路基础，覆盖至少 4 个章节（电路定律、运放、二极管、三极管/MOSFET、频率响应/反馈）。
+- 另建 10–15 条不含笔记标题原词的改写题，写入 `eval/questions.paraphrase.jsonl`，用 `--questions` 单独评测。样本量小，结论只写趋势。
 - 问题必须是自然提问（「理想运放为什么有虚短虚断？」），不要用「X 讲了什么？」模板。
 - 每条核对 `gold_note` 路径确实存在于索引中。
 - `id` 用 `q01`、`q02` 顺序编号。
@@ -1174,9 +1186,11 @@ git commit -m "feat: retrieval evaluation with ablation report"
 ### Task 6: Streamlit 界面
 
 **Files:**
+
 - Create: `app.py`
 
 **Interfaces:**
+
 - Consumes: `rag.config`、`rag.search.Searcher`、`rag.ask.ask`。
 - Produces: `streamlit run app.py` 可用的单页问答界面。
 
@@ -1277,10 +1291,12 @@ git commit -m "feat: streamlit chat UI with sources"
 ### Task 7: README、截图与端到端验证
 
 **Files:**
+
 - Create: `README.md`
 - Modify: `.gitignore`（如需忽略截图临时文件）
 
 **Interfaces:**
+
 - Consumes: 全部模块与评测结果。
 - Produces: 可复现的项目说明。
 
@@ -1342,6 +1358,7 @@ uv run streamlit run app.py
 - 只覆盖电子电路基础一门课，领域窄。
 - 附件（图片、PDF）未解析；公式只作为文本参与检索。
 - 首次建索引需下载约 3.3GB 模型。
+
 ```
 
 - [ ] **Step 2: 端到端冷启动验证**

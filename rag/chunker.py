@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 from . import config
 
-HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
-IMAGE_EMBED = re.compile(r"!\[\[[^\]]*\]\]")
-WIKILINK = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
+HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$") # 正则表达式 ：一到六个# + 空格 + 标题文字
+IMAGE_EMBED = re.compile(r"!\[\[[^\]]*\]\]") # 图片
+WIKILINK = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]") # obsidian 双链语法
 
 
 @dataclass
@@ -55,7 +55,7 @@ def split_sections(text: str) -> list[tuple[str, str]]:
             in_fence = not in_fence
             buf.append(line)
             continue
-        match = None if in_fence else HEADING.match(stripped)
+        match = None if in_fence else HEADING.match(stripped) # if in_fence: match = None
         if match:
             flush()
             level = len(match.group(1))

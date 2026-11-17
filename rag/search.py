@@ -82,9 +82,11 @@ class Searcher:
         top_k: int = config.TOP_K,
         no_rerank: bool = False,
         recall_k: int | None = None,
-        rerank_n: int = 20,
+        # rerank_n: int = 20,
+        rerank_n: int | None = None,
     ) -> list[RetrievedChunk]:
         recall_k = recall_k or config.RECALL_K
+        rerank_n = rerank_n or recall_k * 2
         vector_hits = self.vector_candidates(query, recall_k)
         bm25_hits = self.bm25_candidates(query, recall_k)
         fused = rrf_fuse(

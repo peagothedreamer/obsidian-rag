@@ -6,7 +6,20 @@ from pathlib import Path
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 os.environ.setdefault("HF_HOME", r"F:\hf-cache")
 
+def _load_dotenv(path: Path) -> None:
+    """读取项目根目录的 .env；真实环境变量优先。"""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_load_dotenv(PROJECT_ROOT / ".env")
 
 VAULT = Path(os.environ.get("OBSIDIAN_VAULT", PROJECT_ROOT / "notes"))
 

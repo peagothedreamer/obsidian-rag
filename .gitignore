@@ -4,3 +4,5 @@ notes/
 __pycache__/
 *.pyc
 .pytest_cache/
+.env
+eval/questions.draft.jsonl
