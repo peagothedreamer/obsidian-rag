@@ -190,7 +190,7 @@ uv run python -m hyde.rerank --questions eval/questions.paraphrase.jsonl --out r
 
 小样本上的差距只写趋势，不写精确的百分比提升。
 
-## 快速开始（可选）
+## 快速开始
 
 面试官通常只需要看评测结果和设计；需要复现时按下面步骤。
 
