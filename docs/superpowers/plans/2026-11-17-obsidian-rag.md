@@ -21,6 +21,8 @@
 - 所有命令从项目根目录执行，统一用 `uv run`。
 - 不改动 Obsidian vault 内任何文件（只读）。
 - 测试不加载真实模型、不调用网络。
+- 本机实测 `huggingface.co` 连接超时、`hf-mirror.com` 可用：`rag/config.py` 顶部用 `os.environ.setdefault` 设置 `HF_ENDPOINT=https://hf-mirror.com` 和 `HF_HOME=F:\hf-cache`；所有模块先 import `rag.config`，再 import `sentence_transformers`。
+- 本机未设置 `DEEPSEEK_API_KEY`；无 key 时只验证仅检索模式，生成链路待配置 key 后手测。
 
 ---
 
@@ -132,6 +134,10 @@ Expected: 首次运行会安装依赖（torch 等约 2–3GB，需要等待几�
 """项目配置。所有可调参数集中在这里。"""
 import os
 from pathlib import Path
+
+# 本机实测 huggingface.co 不可达，走镜像；模型缓存放 F 盘。
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+os.environ.setdefault("HF_HOME", r"F:\hf-cache")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -393,10 +399,10 @@ from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
-from . import config
+from . import config  # 必须先于 sentence_transformers 导入（设置 HF 镜像）
 from .chunker import Chunk, chunk_note
+from sentence_transformers import SentenceTransformer
 
 _model = None
 
@@ -620,11 +626,11 @@ from pathlib import Path
 import jieba
 import numpy as np
 from rank_bm25 import BM25Okapi
-from sentence_transformers import CrossEncoder, SentenceTransformer
 
-from . import config
+from . import config  # 必须先于 sentence_transformers 导入（设置 HF 镜像）
 from .chunker import Chunk
 from .index import load_chunks
+from sentence_transformers import CrossEncoder, SentenceTransformer
 
 
 @dataclass
